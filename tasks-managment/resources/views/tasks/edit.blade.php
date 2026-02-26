@@ -1,45 +1,117 @@
 @extends('layouts.app')
 
 @section('content')
-<h1>{{ isset($task) ? 'Edit Task' : 'Create Task' }}</h1>
 
-<form action="{{ isset($task) ? route('tasks.update', $task) : route('tasks.store') }}" method="POST">
-    @csrf
-    @if(isset($task))
-        @method('PUT')
+<div class="max-w-xl mx-auto">
+
+    {{-- Page header --}}
+    <div class="mb-6">
+        <a href="{{ route('tasks.index') }}" class="inline-flex items-center gap-1 text-sm text-base-content/50 hover:text-base-content transition-colors mb-4">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Back to Tasks
+        </a>
+        <h1 class="text-2xl font-bold tracking-tight">Edit Task</h1>
+        <p class="text-base-content/60 text-sm mt-1">Update task details</p>
+    </div>
+
+    {{-- Validation errors --}}
+    @if($errors->any())
+        <div role="alert" class="alert alert-error mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <ul class="list-disc list-inside text-sm space-y-0.5">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
     @endif
 
-    <label>Title:</label>
-    <input type="text" name="title" value="{{ old('title', $task->title ?? '') }}" required><br>
+    {{-- Form card --}}
+    <div class="card bg-base-100 shadow">
+        <div class="card-body">
+            <form action="{{ route('tasks.update', $task) }}" method="POST" class="space-y-5">
+                @csrf
+                @method('PUT')
 
-    <label>Description:</label>
-    <textarea name="description">{{ old('description', $task->description ?? '') }}</textarea><br>
+                {{-- Title --}}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Title</span>
+                    </label>
+                    <input type="text" name="title" value="{{ old('title', $task->title) }}" required
+                           class="input input-bordered w-full {{ $errors->has('title') ? 'input-error' : '' }}">
+                </div>
 
-    <label>Status:</label>
-    <select name="status" required>
-        @foreach(['todo','in_progress','done'] as $status)
-            <option value="{{ $status }}" @selected(old('status', $task->status ?? '') == $status)>{{ ucfirst($status) }}</option>
-        @endforeach
-    </select><br>
+                {{-- Description --}}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Description <span class="text-base-content/40 font-normal">(optional)</span></span>
+                    </label>
+                    <textarea name="description" rows="3"
+                              class="textarea textarea-bordered w-full resize-none">{{ old('description', $task->description) }}</textarea>
+                </div>
 
-    <label>Priority:</label>
-    <select name="priority" required>
-        @foreach(['low','medium','high'] as $priority)
-            <option value="{{ $priority }}" @selected(old('priority', $task->priority ?? '') == $priority)>{{ ucfirst($priority) }}</option>
-        @endforeach
-    </select><br>
+                {{-- Status & Priority --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Status</span>
+                        </label>
+                        <select name="status" required class="select select-bordered w-full">
+                            @foreach(['todo' => 'To Do', 'in_progress' => 'In Progress', 'done' => 'Done'] as $val => $label)
+                                <option value="{{ $val }}" @selected(old('status', $task->status) == $val)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text font-medium">Priority</span>
+                        </label>
+                        <select name="priority" required class="select select-bordered w-full">
+                            @foreach(['low', 'medium', 'high'] as $priority)
+                                <option value="{{ $priority }}" @selected(old('priority', $task->priority) == $priority)>{{ ucfirst($priority) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
 
-    <label>Due Date:</label>
-    <input type="date" name="due_date" value="{{ old('due_date', isset($task->due_date) ? $task->due_date : '') }}"><br>
+                {{-- Due Date --}}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Due Date <span class="text-base-content/40 font-normal">(optional)</span></span>
+                    </label>
+                    <input type="date" name="due_date"
+                           value="{{ old('due_date', $task->due_date ? $task->due_date : '') }}"
+                           class="input input-bordered w-full">
+                </div>
 
-    <label>Assign User:</label>
-    <select name="assigned_user_id">
-        <option value="">-- Unassigned --</option>
-        @foreach($users as $user)
-            <option value="{{ $user->id }}" @selected(old('assigned_user_id', $task->assigned_user_id ?? '') == $user->id)>{{ $user->name }}</option>
-        @endforeach
-    </select><br>
+                {{-- Assign User --}}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Assign to User <span class="text-base-content/40 font-normal">(optional)</span></span>
+                    </label>
+                    <select name="assigned_user_id" class="select select-bordered w-full">
+                        <option value="">— Unassigned —</option>
+                        @foreach($users as $user)
+                            <option value="{{ $user->id }}" @selected(old('assigned_user_id', $task->assigned_user_id) == $user->id)>{{ $user->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-    <button type="submit">{{ isset($task) ? 'Update' : 'Create' }}</button>
-</form>
+                {{-- Actions --}}
+                <div class="flex items-center gap-3 pt-2">
+                    <button type="submit" class="btn btn-primary flex-1">Save Changes</button>
+                    <a href="{{ route('tasks.index') }}" class="btn btn-ghost flex-1">Cancel</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>
+
 @endsection
